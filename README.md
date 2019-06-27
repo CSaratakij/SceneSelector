@@ -1,6 +1,6 @@
 # SceneSelector
 - Play a specific scene in unity playmode and jump back to current edit scene when finish playing.
-![image](./screenshot/image.png)
+![image](./screenshot/image1.png)
 
 # Getting Started
 1) Add script to Editor Folder (create one if is not exist)
