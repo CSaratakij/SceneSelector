@@ -3,7 +3,7 @@
 ![image](./screenshot/image1.png)
 
 # Install
-Use unity package, install via git url.
+Use unity package manager, install via git url.
 >> url : https://github.com/CSaratakij/SceneSelector.git#upm
 
 # Getting Started
