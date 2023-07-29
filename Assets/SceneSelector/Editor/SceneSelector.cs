@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -45,6 +46,9 @@ namespace SceneSelector.Editor
             if (shouldResetSceneInEditMode)
             {
                 EditorSceneManager.playModeStartScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(EditModeSceneAssetPath);
+
+                // TODO : restore build setting if use custom scene list
+                // here...
             }
 
             bool shouldEnableUI = (state != PlayModeStateChange.EnteredPlayMode);
@@ -142,6 +146,9 @@ namespace SceneSelector.Editor
                         }
                         break;
 
+                    // TODO : custom scene list should be able to 
+                    // 1) temporary apply custom scene list to build setting
+                    // 2) restore build setting scene list after exit playmode
                     case PlayMode.CustomSceneList:
                         {
                             if (m_CurrentSceneList)
@@ -153,6 +160,7 @@ namespace SceneSelector.Editor
 
                                 if (currentScene)
                                 {
+                                    // TODO : backup build setting to restore after-ward
                                     EnterPlayModeWithScene(currentScene);
                                 }
                                 else
@@ -197,7 +205,15 @@ namespace SceneSelector.Editor
 
             buttonApplySceneListToBuildSetting.clicked += () =>
             {
-                Debug.Log("clicked..");
+                if (m_CurrentSceneList)
+                {
+                    m_CurrentSceneList.ApplyToBuildSetting();
+                }
+                else
+                {
+                    EditorUtility.DisplayDialog("Error", "No custom scene list found.", "OK");
+                    objectFieldCustomSceneList.Focus();
+                }
             };
         }
 
@@ -232,6 +248,18 @@ namespace SceneSelector.Editor
                 EditorSceneManager.playModeStartScene = sceneAsset;
                 EditorApplication.isPlaying = true;
             }
+        }
+
+        // TODO
+        private void BackupBuildSettingSceneList()
+        {
+
+        }
+
+        // TODO
+        private void RestoreBuildSettingSceneList()
+        {
+
         }
     }
 }
