@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: CustomSceneList
   m_EditorClassIdentifier: 
   settings:
+  - enabled: 0
+    scene: {fileID: 102900000, guid: 9d4ef2a33e2f55157b6e9b949dabcd46, type: 3}
+  - enabled: 0
+    scene: {fileID: 102900000, guid: e9c39cded240464488f97ddf2e94a055, type: 3}
   - enabled: 1
     scene: {fileID: 102900000, guid: 2cda990e2423bbf4892e6590ba056729, type: 3}
-  - enabled: 1
-    scene: {fileID: 102900000, guid: 9d4ef2a33e2f55157b6e9b949dabcd46, type: 3}

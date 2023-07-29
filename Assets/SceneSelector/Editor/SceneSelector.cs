@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
@@ -47,7 +48,11 @@ namespace SceneSelector.Editor
             }
 
             bool shouldEnableUI = (state != PlayModeStateChange.EnteredPlayMode);
-            Instance?.rootVisualElement.SetEnabled(shouldEnableUI);
+
+            if (Instance)
+            {
+                Instance.rootVisualElement.SetEnabled(shouldEnableUI);
+            }
         }
 
         private void OnEnable()
@@ -121,25 +126,67 @@ namespace SceneSelector.Editor
 
             buttonPlay.clicked += () =>
             {
-                EditModeSceneAssetPath = EditorSceneManager.GetActiveScene().path;
-
                 switch (m_CurrentPlayMode)
                 {
                     case PlayMode.CustomFirstScene:
                         {
-
+                            if (m_CustomFirstScene)
+                            {
+                                EnterPlayModeWithScene(m_CustomFirstScene);
+                            }
+                            else
+                            {
+                                EditorUtility.DisplayDialog("Error", "No scene selected for playing.", "OK");
+                                objectFieldCustomFirstScene.Focus();
+                            }
                         }
                         break;
 
                     case PlayMode.CustomSceneList:
                         {
+                            if (m_CurrentSceneList)
+                            {
+                                var currentScene = m_CurrentSceneList
+                                                        ?.settings
+                                                        ?.FirstOrDefault(x => x.enabled == true)
+                                                        ?.scene;
 
+                                if (currentScene)
+                                {
+                                    EnterPlayModeWithScene(currentScene);
+                                }
+                                else
+                                {
+                                    EditorUtility.DisplayDialog("Error", "No valid active scene in custom scene list.", "OK");
+                                    EditorGUIUtility.PingObject(m_CurrentSceneList);
+                                }
+                            }
+                            else
+                            {
+                                EditorUtility.DisplayDialog("Error", "No custom scene list found.", "OK");
+                                objectFieldCustomSceneList.Focus();
+                            }
                         }
                         break;
 
                     case PlayMode.UseBuildSetting:
                         {
+                            var currentScenePath = EditorBuildSettings
+                                                    .scenes
+                                                    ?.FirstOrDefault(x => x.enabled == true)
+                                                    ?.path;
 
+                            var currentScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(currentScenePath);
+
+                            if (currentScene)
+                            {
+                                EnterPlayModeWithScene(currentScene);
+                            }
+                            else
+                            {
+                                EditorUtility.DisplayDialog("Error", "No valid active scene in custom scene list.", "OK");
+                                EditorGUIUtility.PingObject(m_CurrentSceneList);
+                            }
                         }
                         break;
 
@@ -175,6 +222,16 @@ namespace SceneSelector.Editor
 
             objectFieldCustomFirstScene.value = m_CustomFirstScene;
             objectFieldCustomSceneList.value = m_CurrentSceneList;
+        }
+
+        private void EnterPlayModeWithScene(SceneAsset sceneAsset)
+        {
+            if (!Application.isPlaying)
+            {
+                EditModeSceneAssetPath = EditorSceneManager.GetActiveScene().path;
+                EditorSceneManager.playModeStartScene = sceneAsset;
+                EditorApplication.isPlaying = true;
+            }
         }
     }
 }
