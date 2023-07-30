@@ -9,7 +9,7 @@
 
 ## Install (TODO)
 Use unity package manager, install via git url.
->> url : 
+>> url : https://github.com/CSaratakij/SceneSelector.git#upm
 
 ## Getting Started
 1) Go to "Window -> General -> Scene Selector"
