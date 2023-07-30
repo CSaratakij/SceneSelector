@@ -1,0 +1,17 @@
+{
+    "name": "com.csaratakij.sceneselector",
+    "version": "1.1.0",
+    "displayName": "SceneSelector",
+    "description": "Play a specific scene in unity playmode and jump back to current edit scene when finish playing.",
+    "unity": "2021.1",
+    "keywords": [
+        "sceneselector",
+        "scene",
+        "buildsetting"
+    ],
+    "author": {
+        "name": "Chatchai Saratakij",
+        "email": "csaratakij@gmail.com",
+        "url": "https://csaratakij.github.io"
+    }
+}
