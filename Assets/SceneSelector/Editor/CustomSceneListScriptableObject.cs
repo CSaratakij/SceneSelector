@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
@@ -28,19 +27,11 @@ namespace SceneSelector.Editor
 
         public void ApplyToBuildSetting()
         {
-            bool isConfirm = EditorUtility.DisplayDialog("Warning", "Are you sure to apply custom scene list to BuildSetting?", "Apply", "Cancel");
-
-            if (!isConfirm)
-            {
-                return;
-            }
-
             bool isNonValidSceneFound = settings.Any(x => (x.scene == null));
 
             if (isNonValidSceneFound)
             {
-                EditorUtility.DisplayDialog("Error", "Cannot include empty scene from custom scene list to BuildSetting, please remove empty scene element to proceed.", "OK");
-                return;
+                throw new InvalidOperationException("Cannot include empty scene from custom scene list to BuildSetting, please remove empty scene element to proceed.");
             }
 
             var editorBuildSettingsScenes = settings.Select(x =>
@@ -53,22 +44,23 @@ namespace SceneSelector.Editor
 
             if (isDuplicateSceneFound)
             {
-                EditorUtility.DisplayDialog("Error", "Duplicate scene in settings found, please remove any duplicate scene to proceed.", "OK");
-                return;
+                throw new InvalidOperationException("Duplicate scene in settings found, please remove any duplicate scene to proceed.");
             }
 
             EditorBuildSettings.scenes = editorBuildSettingsScenes.ToArray();
-            EditorUtility.DisplayDialog("Success", "Scene list in BuildSetting has changed", "OK");
         }
 
+        // TODO : move confirm dialog to custom editor script
         public void ImportFromBuildSetting()
         {
+            /*
             bool isConfirm = EditorUtility.DisplayDialog("Warning", "Are you sure to import scene list from BuildSetting? \nThis will replace your existing custom scene list setting.", "Import", "Cancel");
 
             if (!isConfirm)
             {
                 return;
             }
+            */
 
             var newSetting = EditorBuildSettings.scenes.Where(x => IsSceneAssetExist(x.path))
             .Select(x =>

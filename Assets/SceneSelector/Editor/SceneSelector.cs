@@ -11,6 +11,9 @@ namespace SceneSelector.Editor
 {
     public class SceneSelector : EditorWindow
     {
+        internal const string KEY_BUILD_SETTING_DIRTY = "KEY_SCENE_SELECTOR_BUILD_SETTING_DIRTY";
+        internal const string KEY_BUILD_SETTING_LAST_STATE = "KEY_SCENE_SELECTOR_BUILD_SETTING_LAST_STATE";
+
         public enum PlayMode
         {
             CustomFirstScene,
@@ -18,7 +21,30 @@ namespace SceneSelector.Editor
             UseBuildSetting
         }
 
-        private static string EditModeSceneAssetPath = "";
+        [Serializable]
+        public struct BuildSettingSceneList
+        {
+            public BuildSettingScene[] settings;
+
+            public BuildSettingSceneList(BuildSettingScene[] settings)
+            {
+                this.settings = settings;
+            }
+        }
+
+        [Serializable]
+        public struct BuildSettingScene
+        {
+            public bool enabled;
+            public string sceneAssetPath;
+
+            public BuildSettingScene(bool enabled, string sceneAssetPath)
+            {
+                this.enabled = enabled;
+                this.sceneAssetPath = sceneAssetPath;
+            }
+        }
+
         private static SceneSelector Instance = default;
 
         [SerializeField] private PlayMode m_CurrentPlayMode;
@@ -39,16 +65,21 @@ namespace SceneSelector.Editor
             window.titleContent = new GUIContent("SceneSelector");
         }
 
+        [InitializeOnLoadMethod]
+        private static void OnProjectLoadedInEditor()
+        {
+            EditorApplication.playModeStateChanged += OnEditorPlayModeStateChanged;
+            EditorApplication.wantsToQuit += OnEditorWantsToQuit;
+        }
+
         private static void OnEditorPlayModeStateChanged(PlayModeStateChange state)
         {
-            bool shouldResetSceneInEditMode = (state == PlayModeStateChange.EnteredEditMode);
+            bool shouldResetEditorState = (state == PlayModeStateChange.EnteredEditMode);
 
-            if (shouldResetSceneInEditMode)
+            if (shouldResetEditorState)
             {
-                EditorSceneManager.playModeStartScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(EditModeSceneAssetPath);
-
-                // TODO : restore build setting if use custom scene list
-                // here...
+                EditorSceneManager.playModeStartScene = null;
+                CheckAndRestoreBuildSettingSceneList();
             }
 
             bool shouldEnableUI = (state != PlayModeStateChange.EnteredPlayMode);
@@ -59,19 +90,60 @@ namespace SceneSelector.Editor
             }
         }
 
+        private static bool OnEditorWantsToQuit()
+        {
+            CheckAndRestoreBuildSettingSceneList();
+            return true;
+        }
+
+        private static void BackupBuildSettingSceneList()
+        {
+            var settings = EditorBuildSettings.scenes.Select(x =>
+            {
+                return new BuildSettingScene(x.enabled, x.path);
+            });
+
+            var buildSettingSceneList = new BuildSettingSceneList(settings.ToArray());
+            string json = JsonUtility.ToJson(buildSettingSceneList);
+
+            EditorPrefs.SetString(KEY_BUILD_SETTING_LAST_STATE, json);
+        }
+
+        private static void CheckAndRestoreBuildSettingSceneList()
+        {
+            bool shouldRestoreBuildSettingSceneList = EditorPrefs.GetBool(KEY_BUILD_SETTING_DIRTY, false);
+
+            if (shouldRestoreBuildSettingSceneList)
+            {
+                RestoreBuildSettingSceneList();
+                EditorPrefs.SetBool(KEY_BUILD_SETTING_DIRTY, false);
+            }
+        }
+
+        private static void RestoreBuildSettingSceneList()
+        {
+            string json = EditorPrefs.GetString(KEY_BUILD_SETTING_LAST_STATE, "");
+
+            if (string.IsNullOrEmpty(json))
+            {
+                return;
+            }
+
+            var buildSettingSceneList = JsonUtility.FromJson<BuildSettingSceneList>(json);
+            var settings = buildSettingSceneList.settings.Select(x =>
+            {
+                return new EditorBuildSettingsScene(x.sceneAssetPath, x.enabled);
+            });
+
+            EditorBuildSettings.scenes = settings.ToArray();
+        }
+
         private void OnEnable()
         {
-            EditorApplication.playModeStateChanged += OnEditorPlayModeStateChanged;
-
             if (Instance == null)
             {
                 Instance = this;
             }
-        }
-
-        private void OnDisable()
-        {
-            EditorApplication.playModeStateChanged -= OnEditorPlayModeStateChanged;
         }
 
         public void CreateGUI()
@@ -146,26 +218,37 @@ namespace SceneSelector.Editor
                         }
                         break;
 
-                    // TODO : custom scene list should be able to 
-                    // 1) temporary apply custom scene list to build setting
-                    // 2) restore build setting scene list after exit playmode
                     case PlayMode.CustomSceneList:
                         {
                             if (m_CurrentSceneList)
                             {
                                 var currentScene = m_CurrentSceneList
                                                         ?.settings
-                                                        ?.FirstOrDefault(x => x.enabled == true)
+                                                        ?.FirstOrDefault(x => (x.enabled == true) && (x.scene != null))
                                                         ?.scene;
 
                                 if (currentScene)
                                 {
-                                    // TODO : backup build setting to restore after-ward
-                                    EnterPlayModeWithScene(currentScene);
+                                    try
+                                    {
+                                        BackupBuildSettingSceneList();
+                                        m_CurrentSceneList.ApplyToBuildSetting();
+
+                                        EditorPrefs.SetBool(KEY_BUILD_SETTING_DIRTY, true);
+                                        EnterPlayModeWithScene(currentScene);
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        RestoreBuildSettingSceneList();
+                                        EditorPrefs.SetBool(KEY_BUILD_SETTING_DIRTY, false);
+
+                                        EditorUtility.DisplayDialog("Error", e.Message, "OK");
+                                        Debug.LogException(e);
+                                    }
                                 }
                                 else
                                 {
-                                    EditorUtility.DisplayDialog("Error", "No valid active scene in custom scene list.", "OK");
+                                    EditorUtility.DisplayDialog("Error", "No valid active scene in custom scene list.\nNeed to have at least one scene enabled", "OK");
                                     EditorGUIUtility.PingObject(m_CurrentSceneList);
                                 }
                             }
@@ -205,14 +288,29 @@ namespace SceneSelector.Editor
 
             buttonApplySceneListToBuildSetting.clicked += () =>
             {
-                if (m_CurrentSceneList)
-                {
-                    m_CurrentSceneList.ApplyToBuildSetting();
-                }
-                else
+                if (!m_CurrentSceneList)
                 {
                     EditorUtility.DisplayDialog("Error", "No custom scene list found.", "OK");
                     objectFieldCustomSceneList.Focus();
+                    return;
+                }
+
+                bool isConfirm = EditorUtility.DisplayDialog("Warning", "Are you sure to apply custom scene list to BuildSetting?", "Apply", "Cancel");
+
+                if (!isConfirm)
+                {
+                    return;
+                }
+
+                try
+                {
+                    m_CurrentSceneList.ApplyToBuildSetting();
+                    EditorUtility.DisplayDialog("Success", "Scene list in BuildSetting has changed", "OK");
+                }
+                catch (Exception e)
+                {
+                    EditorUtility.DisplayDialog("Error", e.Message, "OK");
+                    Debug.LogException(e);
                 }
             };
         }
@@ -244,22 +342,9 @@ namespace SceneSelector.Editor
         {
             if (!Application.isPlaying)
             {
-                EditModeSceneAssetPath = EditorSceneManager.GetActiveScene().path;
                 EditorSceneManager.playModeStartScene = sceneAsset;
                 EditorApplication.isPlaying = true;
             }
-        }
-
-        // TODO
-        private void BackupBuildSettingSceneList()
-        {
-
-        }
-
-        // TODO
-        private void RestoreBuildSettingSceneList()
-        {
-
         }
     }
 }
