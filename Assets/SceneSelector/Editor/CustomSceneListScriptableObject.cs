@@ -27,6 +27,11 @@ namespace SceneSelector.Editor
 
         internal void ApplyToBuildSetting()
         {
+            if (settings == null)
+            {
+                return;
+            }
+
             bool isNonValidSceneFound = settings.Any(x => (x.scene == null));
 
             if (isNonValidSceneFound)
@@ -65,6 +70,11 @@ namespace SceneSelector.Editor
 
         internal void CleanUp()
         {
+            if (settings == null)
+            {
+                return;
+            }
+
             var validSettings = settings.Where(x => (x.scene != null))
                                     .GroupBy(x => x.scene)
                                     .Select(x => x.First());
