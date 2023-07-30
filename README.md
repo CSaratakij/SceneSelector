@@ -7,7 +7,7 @@
 - Support multiple scene list profiles, great for teams that require multiple scene list setup for each team member
 - Support playing from custom scene list in Editor without messing with BuildSettings's scene build index
 
-## Install (TODO)
+## Install
 Use unity package manager, install via git url.
 >> url : https://github.com/CSaratakij/SceneSelector.git#upm
 
