@@ -25,7 +25,7 @@ namespace SceneSelector.Editor
 
         public Setting[] settings;
 
-        public void ApplyToBuildSetting()
+        internal void ApplyToBuildSetting()
         {
             bool isNonValidSceneFound = settings.Any(x => (x.scene == null));
 
@@ -50,18 +50,8 @@ namespace SceneSelector.Editor
             EditorBuildSettings.scenes = editorBuildSettingsScenes.ToArray();
         }
 
-        // TODO : move confirm dialog to custom editor script
-        public void ImportFromBuildSetting()
+        internal void ImportFromBuildSetting()
         {
-            /*
-            bool isConfirm = EditorUtility.DisplayDialog("Warning", "Are you sure to import scene list from BuildSetting? \nThis will replace your existing custom scene list setting.", "Import", "Cancel");
-
-            if (!isConfirm)
-            {
-                return;
-            }
-            */
-
             var newSetting = EditorBuildSettings.scenes.Where(x => IsSceneAssetExist(x.path))
             .Select(x =>
             {
@@ -71,6 +61,15 @@ namespace SceneSelector.Editor
             });
 
             settings = newSetting.ToArray();
+        }
+
+        internal void CleanUp()
+        {
+            var validSettings = settings.Where(x => (x.scene != null))
+                                    .GroupBy(x => x.scene)
+                                    .Select(x => x.First());
+
+            settings = validSettings.ToArray();
         }
 
         private bool IsSceneAssetExist(string assetPath)

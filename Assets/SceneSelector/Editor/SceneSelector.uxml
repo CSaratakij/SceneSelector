@@ -7,6 +7,6 @@
         <uie:ObjectField label="Scene List" allow-scene-objects="false" type="SceneSelector.Editor.CustomSceneListScriptableObject, SceneSelector.Editor" name="objectFieldCustomSceneList" style="display: none; visibility: visible;" />
         <ui:VisualElement name="spacing" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); min-height: 4px;" />
         <ui:Button text="Play" display-tooltip-when-elided="true" name="buttonPlay" enable-rich-text="true" style="min-height: 72px; -unity-font-style: bold; font-size: 32px;" />
-        <ui:Button text="Apply To Build Setting" display-tooltip-when-elided="true" name="buttonApplySceneListToBuildSetting" style="min-height: 32px; display: none;" />
+        <ui:Button text="Apply To Build Settings" display-tooltip-when-elided="true" name="buttonApplySceneListToBuildSetting" style="min-height: 32px; display: none;" />
     </ui:GroupBox>
 </ui:UXML>
